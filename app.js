@@ -183,6 +183,7 @@ function renderMessage(role, content, animate = true) {
     if (!animate) messageDiv.style.animation = 'none';
 
     const isUser = role === 'user';
+    const formattedContent = isUser ? escapeHtml(content) : formatMarkdown(content);
 
     messageDiv.innerHTML = `
         <div class="message-header">
@@ -190,21 +191,34 @@ function renderMessage(role, content, animate = true) {
             <div class="message-name">${isUser ? 'Você' : 'Mariza'}</div>
         </div>
         <div class="message-body">
-            <div class="message-text">${formatContent(content)}</div>
+            <div class="message-text ${isUser ? '' : 'markdown-body'}">${formattedContent}</div>
         </div>
     `;
 
     messagesContainer.appendChild(messageDiv);
+
+    // Apply syntax highlighting to code blocks
+    if (!isUser) {
+        messageDiv.querySelectorAll('pre code').forEach(block => {
+            hljs.highlightElement(block);
+        });
+    }
 }
 
-function formatContent(text) {
-    const escaped = text
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
+// Configure marked.js
+marked.setOptions({
+    breaks: true,
+    gfm: true,
+    highlight: function (code, lang) {
+        if (lang && hljs.getLanguage(lang)) {
+            return hljs.highlight(code, { language: lang }).value;
+        }
+        return hljs.highlightAuto(code).value;
+    }
+});
 
-    const paragraphs = escaped.split('\n\n');
-    return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
+function formatMarkdown(text) {
+    return marked.parse(text);
 }
 
 function escapeHtml(text) {
