@@ -1,14 +1,18 @@
 // ═══════════════════════════════════════════════════════════
-// Mariza AI — Application Logic
+// Mariza AI — Application with Conversation History
 // ═══════════════════════════════════════════════════════════
 
 const API_URL = 'https://madras1-telegrama.hf.space';
 
 // State
-let messages = [];
+let conversations = {};
+let currentConversationId = null;
 let isLoading = false;
 
 // DOM Elements
+const sidebar = document.getElementById('sidebar');
+const sidebarOverlay = document.getElementById('sidebarOverlay');
+const conversationsList = document.getElementById('conversationsList');
 const welcomeView = document.getElementById('welcomeView');
 const chatView = document.getElementById('chatView');
 const welcomeInput = document.getElementById('welcomeInput');
@@ -16,72 +20,169 @@ const chatInput = document.getElementById('chatInput');
 const messagesContainer = document.getElementById('messagesContainer');
 const messagesArea = document.getElementById('messagesArea');
 const greetingText = document.getElementById('greetingText');
+const chatTitle = document.getElementById('chatTitle');
 
-// Initialize
+// ═══════════════════════════════════════════════════════════
+// Initialization
+// ═══════════════════════════════════════════════════════════
+
 document.addEventListener('DOMContentLoaded', () => {
     updateGreeting();
-    loadMessages();
+    loadConversations();
+    renderConversationsList();
     welcomeInput.focus();
 });
 
-// Update greeting based on time
+// ═══════════════════════════════════════════════════════════
+// Sidebar
+// ═══════════════════════════════════════════════════════════
+
+function toggleSidebar() {
+    sidebar.classList.toggle('open');
+    sidebarOverlay.classList.toggle('visible');
+}
+
+function closeSidebar() {
+    sidebar.classList.remove('open');
+    sidebarOverlay.classList.remove('visible');
+}
+
+// ═══════════════════════════════════════════════════════════
+// Conversations Management
+// ═══════════════════════════════════════════════════════════
+
+function loadConversations() {
+    const saved = localStorage.getItem('mariza_conversations');
+    if (saved) {
+        conversations = JSON.parse(saved);
+    }
+}
+
+function saveConversations() {
+    localStorage.setItem('mariza_conversations', JSON.stringify(conversations));
+}
+
+function generateId() {
+    return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+function getConversationTitle(messages) {
+    if (messages.length === 0) return 'Nova conversa';
+    const firstMsg = messages[0].content;
+    return firstMsg.length > 40 ? firstMsg.substring(0, 40) + '...' : firstMsg;
+}
+
+function formatDate(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 0) return 'Hoje';
+    if (diffDays === 1) return 'Ontem';
+    if (diffDays < 7) return `${diffDays} dias`;
+    return date.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' });
+}
+
+function renderConversationsList() {
+    const sortedConversations = Object.entries(conversations)
+        .sort((a, b) => b[1].updatedAt - a[1].updatedAt);
+
+    if (sortedConversations.length === 0) {
+        conversationsList.innerHTML = `
+            <div style="padding: 24px 16px; text-align: center; color: var(--text-tertiary); font-size: 14px;">
+                Nenhuma conversa ainda
+            </div>
+        `;
+        return;
+    }
+
+    conversationsList.innerHTML = sortedConversations.map(([id, conv]) => `
+        <button class="conversation-item ${id === currentConversationId ? 'active' : ''}" onclick="openConversation('${id}')">
+            <span class="conversation-icon">💬</span>
+            <span class="conversation-title">${escapeHtml(getConversationTitle(conv.messages))}</span>
+            <span class="conversation-date">${formatDate(conv.updatedAt)}</span>
+        </button>
+    `).join('');
+}
+
+function createNewChat() {
+    currentConversationId = null;
+    messagesContainer.innerHTML = '';
+
+    chatView.classList.add('hidden');
+    welcomeView.classList.remove('hidden');
+
+    closeSidebar();
+    updateGreeting();
+    welcomeInput.focus();
+
+    renderConversationsList();
+}
+
+function openConversation(id) {
+    currentConversationId = id;
+    const conv = conversations[id];
+
+    if (!conv) return;
+
+    messagesContainer.innerHTML = '';
+    conv.messages.forEach(msg => renderMessage(msg.role, msg.content, false));
+
+    chatTitle.textContent = getConversationTitle(conv.messages);
+
+    welcomeView.classList.add('hidden');
+    chatView.classList.remove('hidden');
+
+    closeSidebar();
+    scrollToBottom();
+    chatInput.focus();
+
+    renderConversationsList();
+}
+
+function deleteCurrentChat() {
+    if (!currentConversationId) return;
+
+    if (confirm('Excluir esta conversa?')) {
+        delete conversations[currentConversationId];
+        saveConversations();
+        createNewChat();
+    }
+}
+
+function clearAllData() {
+    if (confirm('Excluir todas as conversas?')) {
+        conversations = {};
+        localStorage.removeItem('mariza_conversations');
+        createNewChat();
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
+// Greeting
+// ═══════════════════════════════════════════════════════════
+
 function updateGreeting() {
     const hour = new Date().getHours();
     let greeting;
 
-    if (hour >= 5 && hour < 12) {
-        greeting = 'Bom dia';
-    } else if (hour >= 12 && hour < 18) {
-        greeting = 'Boa tarde';
-    } else {
-        greeting = 'Boa noite';
-    }
+    if (hour >= 5 && hour < 12) greeting = 'Bom dia';
+    else if (hour >= 12 && hour < 18) greeting = 'Boa tarde';
+    else greeting = 'Boa noite';
 
     greetingText.textContent = greeting;
 }
 
-// Load messages from localStorage
-function loadMessages() {
-    const saved = localStorage.getItem('mariza_chat');
-    if (saved) {
-        messages = JSON.parse(saved);
-        if (messages.length > 0) {
-            showChatView();
-            messages.forEach(msg => renderMessage(msg.role, msg.content, false));
-            scrollToBottom();
-        }
-    }
-}
+// ═══════════════════════════════════════════════════════════
+// Messages
+// ═══════════════════════════════════════════════════════════
 
-// Save messages
-function saveMessages() {
-    localStorage.setItem('mariza_chat', JSON.stringify(messages));
-}
-
-// Show chat view
-function showChatView() {
-    welcomeView.classList.add('hidden');
-    chatView.classList.remove('hidden');
-    setTimeout(() => chatInput.focus(), 100);
-}
-
-// Go back to welcome
-function goBack() {
-    if (messages.length === 0) {
-        chatView.classList.add('hidden');
-        welcomeView.classList.remove('hidden');
-        welcomeInput.focus();
-    }
-}
-
-// Render message
 function renderMessage(role, content, animate = true) {
     const messageDiv = document.createElement('div');
     messageDiv.className = `message ${role}`;
     if (!animate) messageDiv.style.animation = 'none';
 
     const isUser = role === 'user';
-    const formattedContent = formatContent(content);
 
     messageDiv.innerHTML = `
         <div class="message-header">
@@ -89,27 +190,29 @@ function renderMessage(role, content, animate = true) {
             <div class="message-name">${isUser ? 'Você' : 'Mariza'}</div>
         </div>
         <div class="message-body">
-            <div class="message-text">${formattedContent}</div>
+            <div class="message-text">${formatContent(content)}</div>
         </div>
     `;
 
     messagesContainer.appendChild(messageDiv);
 }
 
-// Format content (basic markdown-like)
 function formatContent(text) {
-    // Escape HTML
     const escaped = text
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;');
 
-    // Split into paragraphs
     const paragraphs = escaped.split('\n\n');
     return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
 }
 
-// Show typing indicator
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
 function showTyping() {
     const typingDiv = document.createElement('div');
     typingDiv.className = 'message assistant';
@@ -121,9 +224,7 @@ function showTyping() {
             <div class="message-name">Mariza</div>
         </div>
         <div class="message-body">
-            <div class="typing-dots">
-                <span></span><span></span><span></span>
-            </div>
+            <div class="typing-dots"><span></span><span></span><span></span></div>
         </div>
     `;
 
@@ -131,25 +232,21 @@ function showTyping() {
     scrollToBottom();
 }
 
-// Hide typing
 function hideTyping() {
     const typing = document.getElementById('typingIndicator');
     if (typing) typing.remove();
 }
 
-// Scroll to bottom
 function scrollToBottom() {
     messagesArea.scrollTop = messagesArea.scrollHeight;
 }
 
-// Auto-resize textarea
 function autoResize(textarea) {
     textarea.style.height = 'auto';
     const maxHeight = textarea === welcomeInput ? 200 : 120;
     textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
 }
 
-// Handle keyboard
 function handleKeydown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
@@ -161,18 +258,29 @@ function handleKeydown(event) {
     }
 }
 
-// Send from welcome screen
+// ═══════════════════════════════════════════════════════════
+// Send Messages
+// ═══════════════════════════════════════════════════════════
+
 function sendFromWelcome() {
     const content = welcomeInput.value.trim();
     if (!content || isLoading) return;
 
-    showChatView();
+    // Create new conversation
+    currentConversationId = generateId();
+    conversations[currentConversationId] = {
+        messages: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+    };
+
+    welcomeView.classList.add('hidden');
+    chatView.classList.remove('hidden');
     welcomeInput.value = '';
 
     processMessage(content);
 }
 
-// Send message from chat
 function sendMessage() {
     const content = chatInput.value.trim();
     if (!content || isLoading) return;
@@ -183,15 +291,20 @@ function sendMessage() {
     processMessage(content);
 }
 
-// Process and send message
 async function processMessage(content) {
+    const conv = conversations[currentConversationId];
+
     // Add user message
-    messages.push({ role: 'user', content });
+    conv.messages.push({ role: 'user', content });
+    conv.updatedAt = Date.now();
+    saveConversations();
+
     renderMessage('user', content);
-    saveMessages();
+    chatTitle.textContent = getConversationTitle(conv.messages);
+    renderConversationsList();
     scrollToBottom();
 
-    // Loading state
+    // Loading
     isLoading = true;
     document.querySelectorAll('.send-btn, .send-btn-small').forEach(btn => btn.disabled = true);
     showTyping();
@@ -201,7 +314,7 @@ async function processMessage(content) {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                messages: messages.map(m => ({ role: m.role, content: m.content }))
+                messages: conv.messages.map(m => ({ role: m.role, content: m.content }))
             })
         });
 
@@ -209,33 +322,22 @@ async function processMessage(content) {
 
         const data = await response.json();
 
-        messages.push({ role: 'assistant', content: data.content });
+        conv.messages.push({ role: 'assistant', content: data.content });
+        conv.updatedAt = Date.now();
+        saveConversations();
+
         hideTyping();
         renderMessage('assistant', data.content);
-        saveMessages();
         scrollToBottom();
 
     } catch (error) {
         console.error('Error:', error);
         hideTyping();
-        renderMessage('assistant', 'Desculpe, ocorreu um erro. Por favor, tente novamente.');
+        renderMessage('assistant', 'Desculpe, ocorreu um erro. Tente novamente.');
     } finally {
         isLoading = false;
         document.querySelectorAll('.send-btn, .send-btn-small').forEach(btn => btn.disabled = false);
         chatInput.focus();
-    }
-}
-
-// Clear chat
-function clearChat() {
-    if (confirm('Iniciar nova conversa?')) {
-        messages = [];
-        localStorage.removeItem('mariza_chat');
-        messagesContainer.innerHTML = '';
-        chatView.classList.add('hidden');
-        welcomeView.classList.remove('hidden');
-        updateGreeting();
-        welcomeInput.focus();
     }
 }
 
