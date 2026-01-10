@@ -4,80 +4,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="theme-color" content="#faf9f7">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Mariza AI</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Mariza</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="icon"
-        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,500;8..60,600&family=Inter:wght@400;500;600&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-    <div class="app">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-left">
-                <div class="logo">
-                    <span class="logo-icon">✨</span>
-                    <span class="logo-text">Mariza</span>
-                </div>
-            </div>
-            <div class="header-right">
-                <button class="icon-btn" onclick="clearChat()" title="Nova conversa">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 5v14M5 12h14" />
-                    </svg>
-                </button>
-            </div>
-        </header>
-
-        <!-- Chat Area -->
-        <main class="chat-area" id="chatArea">
-            <!-- Welcome Screen -->
-            <div class="welcome" id="welcomeScreen">
+    <div class="container">
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Welcome View -->
+            <div class="welcome-view" id="welcomeView">
                 <div class="welcome-content">
-                    <div class="welcome-icon">✨</div>
-                    <h1>Olá, sou a Mariza</h1>
-                    <p class="welcome-subtitle">Assistente com DeepSeek V3.2</p>
+                    <div class="greeting">
+                        <span class="greeting-icon">✦</span>
+                        <h1 id="greetingText">Boa noite</h1>
+                    </div>
 
-                    <div class="suggestions">
-                        <button class="suggestion"
-                            onclick="useSuggestion('Me explique como funciona machine learning')">
-                            <span class="suggestion-icon">🧠</span>
-                            <span>Explicar machine learning</span>
-                        </button>
-                        <button class="suggestion" onclick="useSuggestion('Escreva um poema sobre tecnologia')">
-                            <span class="suggestion-icon">✍️</span>
-                            <span>Escrever um poema</span>
-                        </button>
-                        <button class="suggestion" onclick="useSuggestion('Me ajude a debugar um código Python')">
-                            <span class="suggestion-icon">🐍</span>
-                            <span>Ajudar com código</span>
-                        </button>
+                    <div class="input-card">
+                        <textarea id="welcomeInput" class="input-main" placeholder="Como posso ajudar você hoje?"
+                            rows="1" onkeydown="handleKeydown(event)" oninput="autoResize(this)"></textarea>
+                        <div class="input-footer">
+                            <div class="input-actions">
+                                <button class="action-btn" title="Anexar arquivo">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.5">
+                                        <path d="M12 5v14M5 12h14" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div class="input-meta">
+                                <span class="model-name">DeepSeek V3</span>
+                                <button class="send-btn" onclick="sendFromWelcome()" id="welcomeSendBtn">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path
+                                            d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Messages Container -->
-            <div class="messages" id="messagesContainer"></div>
-        </main>
+            <!-- Chat View -->
+            <div class="chat-view hidden" id="chatView">
+                <header class="chat-header">
+                    <button class="back-btn" onclick="goBack()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7" />
+                        </svg>
+                    </button>
+                    <div class="chat-title">
+                        <span class="title-icon">✦</span>
+                        <span>Mariza</span>
+                    </div>
+                    <button class="menu-btn" onclick="clearChat()">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="12" cy="12" r="1" />
+                            <circle cx="19" cy="12" r="1" />
+                            <circle cx="5" cy="12" r="1" />
+                        </svg>
+                    </button>
+                </header>
 
-        <!-- Input Area -->
-        <footer class="input-area">
-            <div class="input-wrapper">
-                <textarea id="messageInput" placeholder="Mensagem para Mariza..." rows="1"
-                    onkeydown="handleKeydown(event)" oninput="autoResize(this)"></textarea>
-                <button type="button" id="sendBtn" class="send-btn" onclick="sendMessage()">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                    </svg>
-                </button>
+                <div class="messages-area" id="messagesArea">
+                    <div class="messages-container" id="messagesContainer"></div>
+                </div>
+
+                <div class="chat-input-area">
+                    <div class="chat-input-card">
+                        <textarea id="chatInput" class="input-chat" placeholder="Responder..." rows="1"
+                            onkeydown="handleKeydown(event)" oninput="autoResize(this)"></textarea>
+                        <button class="send-btn-small" onclick="sendMessage()" id="chatSendBtn">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                                <path
+                                    d="M3.478 2.404a.75.75 0 0 0-.926.941l2.432 7.905H13.5a.75.75 0 0 1 0 1.5H4.984l-2.432 7.905a.75.75 0 0 0 .926.94 60.519 60.519 0 0 0 18.445-8.986.75.75 0 0 0 0-1.218A60.517 60.517 0 0 0 3.478 2.404Z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
             </div>
-            <p class="disclaimer">Mariza usa DeepSeek V3.2 e pode cometer erros.</p>
-        </footer>
+        </main>
     </div>
 
     <script src="app.js"></script>

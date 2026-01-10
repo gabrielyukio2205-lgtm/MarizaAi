@@ -1,8 +1,7 @@
-// ========================================
-// Mariza AI - Chat Application
-// ========================================
+// ═══════════════════════════════════════════════════════════
+// Mariza AI — Application Logic
+// ═══════════════════════════════════════════════════════════
 
-// API Configuration - Change this to your HF Spaces URL
 const API_URL = 'https://madras1-telegrama.hf.space';
 
 // State
@@ -10,25 +9,44 @@ let messages = [];
 let isLoading = false;
 
 // DOM Elements
-const chatArea = document.getElementById('chatArea');
-const welcomeScreen = document.getElementById('welcomeScreen');
+const welcomeView = document.getElementById('welcomeView');
+const chatView = document.getElementById('chatView');
+const welcomeInput = document.getElementById('welcomeInput');
+const chatInput = document.getElementById('chatInput');
 const messagesContainer = document.getElementById('messagesContainer');
-const messageInput = document.getElementById('messageInput');
-const sendBtn = document.getElementById('sendBtn');
+const messagesArea = document.getElementById('messagesArea');
+const greetingText = document.getElementById('greetingText');
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
+    updateGreeting();
     loadMessages();
-    messageInput.focus();
+    welcomeInput.focus();
 });
+
+// Update greeting based on time
+function updateGreeting() {
+    const hour = new Date().getHours();
+    let greeting;
+
+    if (hour >= 5 && hour < 12) {
+        greeting = 'Bom dia';
+    } else if (hour >= 12 && hour < 18) {
+        greeting = 'Boa tarde';
+    } else {
+        greeting = 'Boa noite';
+    }
+
+    greetingText.textContent = greeting;
+}
 
 // Load messages from localStorage
 function loadMessages() {
-    const saved = localStorage.getItem('mariza_messages');
+    const saved = localStorage.getItem('mariza_chat');
     if (saved) {
         messages = JSON.parse(saved);
         if (messages.length > 0) {
-            welcomeScreen.classList.add('hidden');
+            showChatView();
             messages.forEach(msg => renderMessage(msg.role, msg.content, false));
             scrollToBottom();
         }
@@ -37,7 +55,23 @@ function loadMessages() {
 
 // Save messages
 function saveMessages() {
-    localStorage.setItem('mariza_messages', JSON.stringify(messages));
+    localStorage.setItem('mariza_chat', JSON.stringify(messages));
+}
+
+// Show chat view
+function showChatView() {
+    welcomeView.classList.add('hidden');
+    chatView.classList.remove('hidden');
+    setTimeout(() => chatInput.focus(), 100);
+}
+
+// Go back to welcome
+function goBack() {
+    if (messages.length === 0) {
+        chatView.classList.add('hidden');
+        welcomeView.classList.remove('hidden');
+        welcomeInput.focus();
+    }
 }
 
 // Render message
@@ -47,23 +81,32 @@ function renderMessage(role, content, animate = true) {
     if (!animate) messageDiv.style.animation = 'none';
 
     const isUser = role === 'user';
+    const formattedContent = formatContent(content);
 
     messageDiv.innerHTML = `
-        <div class="message-avatar">${isUser ? '👤' : '✨'}</div>
-        <div class="message-content">
-            <div class="message-role">${isUser ? 'Você' : 'Mariza'}</div>
-            <div class="message-text">${escapeHtml(content)}</div>
+        <div class="message-header">
+            <div class="message-avatar">${isUser ? '👤' : '✦'}</div>
+            <div class="message-name">${isUser ? 'Você' : 'Mariza'}</div>
+        </div>
+        <div class="message-body">
+            <div class="message-text">${formattedContent}</div>
         </div>
     `;
 
     messagesContainer.appendChild(messageDiv);
 }
 
-// Escape HTML
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+// Format content (basic markdown-like)
+function formatContent(text) {
+    // Escape HTML
+    const escaped = text
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+
+    // Split into paragraphs
+    const paragraphs = escaped.split('\n\n');
+    return paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('');
 }
 
 // Show typing indicator
@@ -73,10 +116,12 @@ function showTyping() {
     typingDiv.id = 'typingIndicator';
 
     typingDiv.innerHTML = `
-        <div class="message-avatar">✨</div>
-        <div class="message-content">
-            <div class="message-role">Mariza</div>
-            <div class="typing">
+        <div class="message-header">
+            <div class="message-avatar">✦</div>
+            <div class="message-name">Mariza</div>
+        </div>
+        <div class="message-body">
+            <div class="typing-dots">
                 <span></span><span></span><span></span>
             </div>
         </div>
@@ -94,51 +139,61 @@ function hideTyping() {
 
 // Scroll to bottom
 function scrollToBottom() {
-    chatArea.scrollTop = chatArea.scrollHeight;
+    messagesArea.scrollTop = messagesArea.scrollHeight;
 }
 
 // Auto-resize textarea
 function autoResize(textarea) {
     textarea.style.height = 'auto';
-    textarea.style.height = Math.min(textarea.scrollHeight, 150) + 'px';
+    const maxHeight = textarea === welcomeInput ? 200 : 120;
+    textarea.style.height = Math.min(textarea.scrollHeight, maxHeight) + 'px';
 }
 
 // Handle keyboard
 function handleKeydown(event) {
     if (event.key === 'Enter' && !event.shiftKey) {
         event.preventDefault();
-        sendMessage();
+        if (event.target === welcomeInput) {
+            sendFromWelcome();
+        } else {
+            sendMessage();
+        }
     }
 }
 
-// Use suggestion
-function useSuggestion(text) {
-    messageInput.value = text;
-    messageInput.focus();
-    autoResize(messageInput);
-}
-
-// Send message
-async function sendMessage() {
-    const content = messageInput.value.trim();
+// Send from welcome screen
+function sendFromWelcome() {
+    const content = welcomeInput.value.trim();
     if (!content || isLoading) return;
 
-    // Hide welcome
-    welcomeScreen.classList.add('hidden');
+    showChatView();
+    welcomeInput.value = '';
 
+    processMessage(content);
+}
+
+// Send message from chat
+function sendMessage() {
+    const content = chatInput.value.trim();
+    if (!content || isLoading) return;
+
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+
+    processMessage(content);
+}
+
+// Process and send message
+async function processMessage(content) {
     // Add user message
     messages.push({ role: 'user', content });
     renderMessage('user', content);
     saveMessages();
     scrollToBottom();
 
-    // Clear input
-    messageInput.value = '';
-    messageInput.style.height = 'auto';
-
     // Loading state
     isLoading = true;
-    sendBtn.disabled = true;
+    document.querySelectorAll('.send-btn, .send-btn-small').forEach(btn => btn.disabled = true);
     showTyping();
 
     try {
@@ -146,10 +201,7 @@ async function sendMessage() {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                messages: messages.map(m => ({
-                    role: m.role,
-                    content: m.content
-                }))
+                messages: messages.map(m => ({ role: m.role, content: m.content }))
             })
         });
 
@@ -166,21 +218,25 @@ async function sendMessage() {
     } catch (error) {
         console.error('Error:', error);
         hideTyping();
-        renderMessage('assistant', '❌ Desculpe, algo deu errado. Tente novamente.');
+        renderMessage('assistant', 'Desculpe, ocorreu um erro. Por favor, tente novamente.');
     } finally {
         isLoading = false;
-        sendBtn.disabled = false;
-        messageInput.focus();
+        document.querySelectorAll('.send-btn, .send-btn-small').forEach(btn => btn.disabled = false);
+        chatInput.focus();
     }
 }
 
 // Clear chat
 function clearChat() {
-    messages = [];
-    localStorage.removeItem('mariza_messages');
-    messagesContainer.innerHTML = '';
-    welcomeScreen.classList.remove('hidden');
-    messageInput.focus();
+    if (confirm('Iniciar nova conversa?')) {
+        messages = [];
+        localStorage.removeItem('mariza_chat');
+        messagesContainer.innerHTML = '';
+        chatView.classList.add('hidden');
+        welcomeView.classList.remove('hidden');
+        updateGreeting();
+        welcomeInput.focus();
+    }
 }
 
 // Service Worker
