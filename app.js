@@ -21,12 +21,15 @@ const messagesContainer = document.getElementById('messagesContainer');
 const messagesArea = document.getElementById('messagesArea');
 const greetingText = document.getElementById('greetingText');
 const chatTitle = document.getElementById('chatTitle');
+const themeToggleBtn = document.getElementById('themeToggleBtn');
+const highlightThemeLink = document.getElementById('highlight-theme');
 
 // ═══════════════════════════════════════════════════════════
 // Initialization
 // ═══════════════════════════════════════════════════════════
 
 document.addEventListener('DOMContentLoaded', () => {
+    loadTheme();
     updateGreeting();
     loadConversations();
     renderConversationsList();
@@ -159,6 +162,56 @@ function clearAllData() {
 }
 
 // ═══════════════════════════════════════════════════════════
+// Theme
+// ═══════════════════════════════════════════════════════════
+
+function loadTheme() {
+    const theme = localStorage.getItem('mariza_theme');
+    if (theme === 'dark') {
+        document.body.classList.add('dark-mode');
+        updateThemeUI(true);
+    } else if (theme === 'light') {
+        document.body.classList.remove('dark-mode');
+        updateThemeUI(false);
+    } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark-mode');
+        updateThemeUI(true);
+    }
+}
+
+function toggleTheme() {
+    const isDark = document.body.classList.toggle('dark-mode');
+    localStorage.setItem('mariza_theme', isDark ? 'dark' : 'light');
+    updateThemeUI(isDark);
+}
+
+function updateThemeUI(isDark) {
+    if (highlightThemeLink) {
+        highlightThemeLink.href = isDark
+            ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
+            : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+    }
+
+    if (themeToggleBtn) {
+        const span = themeToggleBtn.querySelector('span');
+        const svg = themeToggleBtn.querySelector('svg');
+
+        if (isDark) {
+            span.textContent = 'Modo Claro';
+            svg.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+        } else {
+            span.textContent = 'Modo Escuro';
+            svg.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+        }
+    }
+
+    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+    if (metaThemeColor) {
+        metaThemeColor.setAttribute('content', isDark ? '#1a1815' : '#faf9f7');
+    }
+}
+
+// ═══════════════════════════════════════════════════════════
 // Greeting
 // ═══════════════════════════════════════════════════════════
 
@@ -201,6 +254,35 @@ function renderMessage(role, content, animate = true) {
     if (!isUser) {
         messageDiv.querySelectorAll('pre code').forEach(block => {
             hljs.highlightElement(block);
+        });
+
+        // Add copy buttons
+        messageDiv.querySelectorAll('pre').forEach(pre => {
+            if (pre.querySelector('.copy-btn')) return;
+
+            const btn = document.createElement('button');
+            btn.className = 'copy-btn';
+            btn.innerHTML = `
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copiar</span>
+            `;
+
+            btn.onclick = () => {
+                const code = pre.querySelector('code').innerText;
+                navigator.clipboard.writeText(code).then(() => {
+                    btn.classList.add('copied');
+                    btn.querySelector('span').textContent = 'Copiado!';
+                    setTimeout(() => {
+                        btn.classList.remove('copied');
+                        btn.querySelector('span').textContent = 'Copiar';
+                    }, 2000);
+                });
+            };
+
+            pre.appendChild(btn);
         });
     }
 }
