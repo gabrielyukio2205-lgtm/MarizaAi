@@ -47,6 +47,34 @@
     --sidebar-width: 280px;
 }
 
+/* Dark Mode */
+body.dark-mode {
+    --bg: #1a1815;
+    --bg-secondary: #252422;
+    --bg-hover: #2f2e2a;
+    --bg-active: #3a3834;
+    --bg-sidebar: #201e1b;
+
+    --text: #ececec;
+    --text-secondary: #a3a29e;
+    --text-tertiary: #706f6c;
+
+    --accent: #da7756;
+    --accent-soft: #3a2a25;
+
+    --border: #3a3834;
+    --border-strong: #4a4844;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.5);
+    --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.6);
+}
+
+body.dark-mode .markdown-body pre {
+    background: #2b2a27;
+    border-color: #3a3834;
+}
+
 /* Reset */
 *,
 *::before,
@@ -69,6 +97,7 @@ body {
     background: var(--bg);
     -webkit-font-smoothing: antialiased;
     overflow: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 button,
@@ -113,7 +142,7 @@ button:focus {
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .sidebar-header {
@@ -228,6 +257,9 @@ button:focus {
 .sidebar-footer {
     padding: var(--space-md);
     border-top: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
 }
 
 .settings-btn {
@@ -244,7 +276,12 @@ button:focus {
 
 .settings-btn:hover {
     background: var(--bg-hover);
+    color: var(--text);
+}
+
+.settings-btn.danger:hover {
     color: #e74c3c;
+    background: var(--bg-hover);
 }
 
 /* Sidebar Overlay */
@@ -266,6 +303,7 @@ button:focus {
     flex-direction: column;
     min-width: 0;
     position: relative;
+    transition: background-color 0.3s ease;
 }
 
 .menu-toggle {
@@ -329,7 +367,7 @@ button:focus {
     border-radius: var(--radius-xl);
     padding: var(--space-md) var(--space-lg);
     box-shadow: var(--shadow-md);
-    transition: border-color 0.2s, box-shadow 0.2s;
+    transition: border-color 0.2s, box-shadow 0.2s, background-color 0.3s ease;
 }
 
 .input-card:focus-within {
@@ -441,6 +479,7 @@ button:focus {
     border-bottom: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .chat-title {
@@ -621,6 +660,7 @@ button:focus {
     padding: var(--space-md);
     margin-bottom: var(--space-md);
     overflow-x: auto;
+    position: relative; /* For copy button */
 }
 
 .markdown-body pre code {
@@ -740,6 +780,7 @@ button:focus {
     padding-bottom: max(var(--space-md), env(safe-area-inset-bottom));
     background: var(--bg);
     border-top: 1px solid var(--border);
+    transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .chat-input-card {
@@ -752,7 +793,7 @@ button:focus {
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
     padding: var(--space-sm) var(--space-sm) var(--space-sm) var(--space-md);
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background-color 0.3s ease;
 }
 
 .chat-input-card:focus-within {
@@ -809,6 +850,40 @@ button:focus {
 .conversations-list::-webkit-scrollbar-thumb {
     background: var(--border);
     border-radius: 3px;
+}
+
+/* Copy Button */
+.copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 6px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-tertiary);
+    cursor: pointer;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.2s;
+    opacity: 0;
+}
+
+.markdown-body pre:hover .copy-btn {
+    opacity: 1;
+}
+
+.copy-btn:hover {
+    background: var(--bg-hover);
+    color: var(--text);
+    border-color: var(--accent);
+}
+
+.copy-btn.copied {
+    color: #27ae60;
+    border-color: #27ae60;
 }
 
 /* ═══════════════════════════════════════════════════════════
