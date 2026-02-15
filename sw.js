@@ -1,8 +1,8 @@
 const CACHE_NAME = 'mariza-v1';
 const urlsToCache = [
-    '/',
-    '/style.css',
-    '/app.js'
+    './',
+    './style.css',
+    './app.js'
 ];
 
 // Install

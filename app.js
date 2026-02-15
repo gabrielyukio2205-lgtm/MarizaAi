@@ -300,7 +300,8 @@ marked.setOptions({
 });
 
 function formatMarkdown(text) {
-    return marked.parse(text);
+    const rawHtml = marked.parse(text);
+    return DOMPurify.sanitize(rawHtml);
 }
 
 function escapeHtml(text) {
