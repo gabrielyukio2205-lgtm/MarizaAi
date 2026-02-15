@@ -41,13 +41,19 @@ document.addEventListener('DOMContentLoaded', () => {
 // ═══════════════════════════════════════════════════════════
 
 function toggleSidebar() {
-    sidebar.classList.toggle('open');
-    sidebarOverlay.classList.toggle('visible');
+    if (window.innerWidth > 768) {
+        sidebar.classList.toggle('collapsed');
+    } else {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('visible');
+    }
 }
 
 function closeSidebar() {
-    sidebar.classList.remove('open');
-    sidebarOverlay.classList.remove('visible');
+    if (window.innerWidth <= 768) {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('visible');
+    }
 }
 
 // ═══════════════════════════════════════════════════════════

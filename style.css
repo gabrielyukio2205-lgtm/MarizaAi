@@ -171,7 +171,7 @@ button:focus {
 }
 
 .sidebar-close {
-    display: none;
+    display: flex;
     width: 32px;
     height: 32px;
     align-items: center;
@@ -312,7 +312,7 @@ button:focus {
     left: var(--space-md);
     width: 40px;
     height: 40px;
-    display: none;
+    display: flex;
     align-items: center;
     justify-content: center;
     color: var(--text-secondary);
@@ -480,6 +480,11 @@ button:focus {
     background: var(--bg);
     flex-shrink: 0;
     transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.chat-header .menu-toggle {
+    position: static;
+    margin-right: var(--space-sm);
 }
 
 .chat-title {
@@ -948,4 +953,14 @@ button:focus {
 
 .hidden {
     display: none !important;
+}
+
+/* Desktop Collapse */
+@media (min-width: 769px) {
+    .sidebar.collapsed {
+        width: 0;
+        border-right: none;
+        overflow: hidden;
+        padding: 0;
+    }
 }
